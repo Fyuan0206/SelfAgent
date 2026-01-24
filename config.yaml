@@ -1,0 +1,79 @@
+# ModelScope API配置
+modelscope:
+  api_key: "ms-d1fcf17b-ce7f-424f-9b1a-a8a409342bf3"
+  # 情绪识别模型（使用支持在线推理的模型）
+  emotion_model: "Qwen/Qwen2.5-7B-Instruct"
+  # 多模态模型
+  multimodal_model: "Qwen/Qwen3-VL-8B-Instruct"
+
+# 讯飞语音识别配置
+xunfei_asr:
+  app_id: "c34805e9"
+  api_secret: "MDMzZTgwYzRjY2U4N2E2NDlkOWU2YzVm"
+  api_key: "a490aae0048f22e73ae2b4ce20e910f6"
+  host: "iat.xf-yun.com"
+  path: "/v1"
+  # 音频参数
+  sample_rate: 16000  # 采样率 16000或8000
+  channels: 1  # 声道数
+  bit_depth: 16  # 位深
+  format: "pcm"  # 音频格式: pcm或mp3
+  # 识别参数
+  domain: "slm"  # 大模型领域
+  language: "zh_cn"  # 语种
+  accent: "mandarin"  # 方言 mandarin(普通话)
+  eos: 6000  # 静音多少毫秒停止识别
+
+# 路由阈值配置
+routing:
+  l1_quick_threshold: 0.3  # L1快速通路阈值（日常闲聊）
+  l2_intervention_threshold: 0.5  # L2干预通路阈值（需要DBT干预）
+  l3_crisis_keywords:  # L3危机关键词（作为后备检测）
+    - "自杀"
+    - "自残"
+    - "自毁"
+    - "不想活"
+    - "结束生命"
+    - "死掉"
+    - "杀死自己"
+
+# DBT核心情绪标签
+dbt_emotions:
+  - "空虚感"
+  - "羞愧"
+  - "激越"
+  - "自伤冲动"
+  - "愤怒"
+  - "悲伤"
+  - "焦虑"
+  - "恐惧"
+  - "厌恶"
+  - "内疚"
+  - "孤独"
+  - "绝望"
+
+# 情绪画像配置
+emotion_profile:
+  baseline_window: 30  # 基准线计算窗口（天）
+  vector_dimension: 128  # 情绪向量维度
+  update_threshold: 0.2  # 更新阈值
+
+# 多模态权重配置
+multimodal:
+  text_weight: 0.6
+  audio_weight: 0.25
+  video_weight: 0.15
+  adaptive_fusion: true
+
+# 危机预警配置
+crisis:
+  alert_recipients:
+    - "emergency@example.com"
+  response_timeout: 5000  # 毫秒
+  max_priority: 10
+
+# 日志配置
+logging:
+  level: "INFO"
+  file: "logs/emotion_recognition.log"
+  rotation: "10 MB"
