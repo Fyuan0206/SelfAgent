@@ -79,7 +79,7 @@ emotion/
 │   ├── emotion_extractor.py       # 情绪特征提取器
 │   ├── multimodal_input_processor.py  # 多模态输入处理器
 │   ├── intelligent_router.py      # 智能路由系统
-│   ├── risk_engine.py             # 风险评估引擎
+│   ├── dbt_intervention.py             # 风险评估引擎
 │   └── emotion_profile.py         # 用户画像管理
 ├── api/                           # API接口（如果需要）
 ├── tests/                         # 测试文件
