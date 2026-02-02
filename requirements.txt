@@ -1,0 +1,14 @@
+camel-ai
+pydantic
+loguru
+python-dotenv
+numpy
+requests
+librosa
+opencv-python
+sqlalchemy
+aiosqlite
+soundfile
+fastapi
+uvicorn
+python-multipart
