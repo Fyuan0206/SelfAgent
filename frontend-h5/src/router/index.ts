@@ -1,7 +1,14 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
+import { isLoggedIn } from '@/api/auth'
 
 const routes: RouteRecordRaw[] = [
+  {
+    path: '/login',
+    name: 'Login',
+    component: () => import('@/views/LoginView.vue'),
+    meta: { title: '登录', public: true }
+  },
   {
     path: '/',
     name: 'Chat',
@@ -38,6 +45,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/CrisisView.vue'),
     meta: { title: '危机干预', hideTabBar: true }
   },
+  {
+    path: '/admin',
+    name: 'Admin',
+    component: () => import('@/views/AdminView.vue'),
+    meta: { title: '管理后台', hideTabBar: true, requiresAdmin: true }
+  },
 ]
 
 const router = createRouter({
@@ -47,6 +60,13 @@ const router = createRouter({
 
 router.beforeEach((to, _from, next) => {
   document.title = `${to.meta.title || 'Self-Agent'} - 智能情绪支持`
+
+  // Check authentication
+  if (!to.meta.public && !isLoggedIn()) {
+    next('/login')
+    return
+  }
+
   next()
 })
 

@@ -19,6 +19,15 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.core.agent import SelfAgent
 from app.models.data_models import UserInput
+from app.api import auth, admin, frontend
+from app.api import profile_api
+from app.core.database import init_db, get_db
+from loguru import logger
+
+# DBT 模块路由
+from app.modules.dbt.api.admin_routes import router as dbt_admin_router
+from app.modules.dbt.db import session as dbt_session
+from app.modules.dbt.db.init_data import init_database as init_dbt_data
 
 
 # ==================== Pydantic Models ====================
@@ -49,6 +58,17 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ==================== API Routes ====================
+
+# 包含认证和管理 API
+app.include_router(auth.router)
+app.include_router(admin.router)
+app.include_router(frontend.router)
+app.include_router(profile_api.router)
+
+# 包含 DBT 管理 API（技能、规则、统计）
+app.include_router(dbt_admin_router, prefix="/api/v1/admin", tags=["DBT管理"])
 
 # ==================== Agent Initialization ====================
 
@@ -184,6 +204,24 @@ if os.path.exists(frontend_dir):
             return FileResponse(index_file)
         return {"message": "Self-Agent API is running. Frontend not found."}
 
+    # Serve login.html
+    @app.get("/login")
+    @app.get("/login.html")
+    async def read_login():
+        login_file = os.path.join(frontend_dir, "login.html")
+        if os.path.exists(login_file):
+            return FileResponse(login_file)
+        return {"message": "Login page not found."}
+
+    # Serve admin.html
+    @app.get("/admin")
+    @app.get("/admin.html")
+    async def read_admin():
+        admin_file = os.path.join(frontend_dir, "admin.html")
+        if os.path.exists(admin_file):
+            return FileResponse(admin_file)
+        return {"message": "Admin page not found."}
+
     logger.info(f"Frontend directory: {frontend_dir}")
 else:
     logger.warning(f"Frontend directory not found: {frontend_dir}")
@@ -197,6 +235,33 @@ async def startup_event():
     logger.info("=" * 60)
     logger.info("Starting Self-Agent Web Server")
     logger.info("=" * 60)
+
+    # Initialize main database (PostgreSQL)
+    try:
+        init_db()
+        logger.info("✓ Database initialized")
+
+        # Create default admin if not exists
+        db = next(get_db())
+        from app.core.database import create_default_admin
+        create_default_admin(db)
+        db.close()
+        logger.info("✓ Default admin user ready (admin@selfagent.com / admin123)")
+    except Exception as e:
+        logger.error(f"✗ Failed to initialize database: {e}")
+        logger.warning("Please ensure PostgreSQL is running: docker-compose up -d")
+
+    # Initialize DBT database (SQLite)
+    try:
+        await dbt_session.init_db()
+        logger.info("✓ DBT database initialized")
+
+        # Initialize default DBT data
+        await init_dbt_data()
+        logger.info("✓ DBT default data ready")
+    except Exception as e:
+        logger.error(f"✗ Failed to initialize DBT database: {e}")
+        logger.warning("DBT skill/rule management may not work properly")
 
     # Check environment variables
     if not os.getenv("OPENAI_API_KEY"):

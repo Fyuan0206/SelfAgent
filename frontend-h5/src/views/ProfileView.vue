@@ -2,10 +2,13 @@
 import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { useChatStore } from '@/stores/chat'
+import { useAuthStore } from '@/stores/auth'
+import { showConfirmDialog, showToast } from 'vant'
 
 const router = useRouter()
 const appStore = useAppStore()
 const chatStore = useChatStore()
+const authStore = useAuthStore()
 
 const menuItems = [
   { icon: 'bell', title: '通知设置', link: true },
@@ -14,6 +17,15 @@ const menuItems = [
   { icon: 'question-o', title: '帮助与反馈', link: true },
   { icon: 'info-o', title: '关于我们', link: true },
 ]
+
+const handleLogout = async () => {
+  try {
+    await showConfirmDialog({ title: '确认退出', message: '确定要退出登录吗？' })
+    authStore.logout()
+    showToast('已退出登录')
+    router.push('/login')
+  } catch (e) {}
+}
 </script>
 
 <template>
@@ -25,8 +37,21 @@ const menuItems = [
       <div class="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-400 to-pink-400 flex items-center justify-center mx-auto mb-3">
         <span class="text-3xl text-white">👤</span>
       </div>
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">用户</h2>
-      <p class="text-sm text-gray-500">ID: {{ chatStore.userId }}</p>
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+        {{ authStore.user?.username || '用户' }}
+      </h2>
+      <p class="text-sm text-gray-500">{{ authStore.user?.email || chatStore.userId }}</p>
+      <van-tag v-if="authStore.isAdmin" type="primary" class="mt-2">管理员</van-tag>
+    </div>
+
+    <!-- 管理员入口 -->
+    <div v-if="authStore.isAdmin" class="glass rounded-2xl shadow-lg overflow-hidden mb-4">
+      <van-cell
+        title="管理后台"
+        icon="setting-o"
+        is-link
+        @click="router.push('/admin')"
+      />
     </div>
 
     <!-- 设置列表 -->
@@ -70,5 +95,18 @@ const menuItems = [
     <p class="text-center text-xs text-gray-400 mt-6">
       Self-Agent H5 v1.0.0
     </p>
+
+    <!-- 退出登录 -->
+    <div class="mt-4">
+      <van-button
+        type="danger"
+        plain
+        block
+        round
+        @click="handleLogout"
+      >
+        退出登录
+      </van-button>
+    </div>
   </div>
 </template>

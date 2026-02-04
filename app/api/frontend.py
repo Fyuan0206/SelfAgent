@@ -14,13 +14,14 @@ from datetime import datetime
 
 from ..core.agent import SelfAgent
 from ..models.data_models import UserInput
+from ..core.quota_middleware import check_chat_quota, check_multimodal_quota
+from ..core.auth import get_current_user, User
 
 
 router = APIRouter(prefix="/api/frontend", tags=["frontend"])
 
 # Pydantic models
 class ChatMessage(BaseModel):
-    user_id: str
     text: str
     timestamp: Optional[str] = None
 
@@ -58,22 +59,25 @@ def get_agent():
 # ==================== Chat API ====================
 
 @router.post("/chat", response_model=ChatResponse)
-async def chat(message: ChatMessage) -> ChatResponse:
+async def chat(
+    message: ChatMessage,
+    current_user: User = Depends(check_chat_quota)
+) -> ChatResponse:
     """
     Process chat message from frontend
+    需要认证，消耗 1 额度
 
-    - **user_id**: User identifier
     - **text**: Message text
     - **timestamp**: Optional timestamp (defaults to now)
     """
     try:
-        logger.info(f"Chat request from user={message.user_id}: {message.text[:50]}...")
+        logger.info(f"Chat request from user={current_user.id}: {message.text[:50]}...")
 
         agent = get_agent()
 
         # Create user input
         user_input = UserInput(
-            user_id=message.user_id,
+            user_id=str(current_user.id),
             text=message.text
         )
 
@@ -97,21 +101,21 @@ async def chat(message: ChatMessage) -> ChatResponse:
 
 @router.post("/chat/multimodal")
 async def chat_multimodal(
-    user_id: str = Form(...),
     text: str = Form(default=""),
     file: UploadFile = File(...),
-    file_type: str = Form(...)
+    file_type: str = Form(...),
+    current_user: User = Depends(check_multimodal_quota)
 ) -> ChatResponse:
     """
     Process multimodal chat message (audio/image)
+    需要认证，消耗 2 额度
 
-    - **user_id**: User identifier
     - **text**: Optional text description
     - **file**: Audio or image file
     - **file_type**: Type of file ('audio' or 'image')
     """
     try:
-        logger.info(f"Multimodal chat from user={user_id}, type={file_type}, file={file.filename}")
+        logger.info(f"Multimodal chat from user={current_user.id}, type={file_type}, file={file.filename}")
 
         agent = get_agent()
 
@@ -120,14 +124,14 @@ async def chat_multimodal(
         os.makedirs(temp_dir, exist_ok=True)
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        file_path = f"{temp_dir}/{user_id}_{timestamp}_{file.filename}"
+        file_path = f"{temp_dir}/{current_user.id}_{timestamp}_{file.filename}"
         with open(file_path, "wb") as f:
             content = await file.read()
             f.write(content)
 
         # Create user input with file path
         user_input = UserInput(
-            user_id=user_id,
+            user_id=str(current_user.id),
             text=text or f"发送了一个{file_type}文件"
         )
         # Add file info to metadata
@@ -162,13 +166,21 @@ async def chat_multimodal(
 # ==================== Emotion Report API ====================
 
 @router.get("/emotion-report/{user_id}", response_model=EmotionReport)
-async def get_emotion_report(user_id: str) -> EmotionReport:
+async def get_emotion_report(
+    user_id: str,
+    current_user: User = Depends(get_current_user)
+) -> EmotionReport:
     """
     Get user's emotion report and trends
+    需要认证
 
     - **user_id**: User identifier
     """
     try:
+        # 验证用户只能查看自己的报告（管理员除外）
+        if current_user.role.value != "admin" and str(current_user.id) != user_id:
+            raise HTTPException(status_code=403, detail="无权访问其他用户的报告")
+
         logger.info(f"Emotion report request for user={user_id}")
 
         agent = get_agent()

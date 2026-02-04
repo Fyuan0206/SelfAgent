@@ -179,12 +179,36 @@
                         </svg>
                     </button>
 
-                    <!-- User menu -->
-                    <button class="flex items-center gap-2 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
-                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-pink-400 flex items-center justify-center text-white text-sm font-medium">
-                            U
+                    <!-- Admin Entry (only visible for admin users) -->
+                    <a id="admin-entry" href="/admin" class="hidden items-center gap-2 px-3 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-sm font-medium transition-colors" title="管理后台">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        <span class="hidden md:inline">管理</span>
+                    </a>
+
+                    <!-- User menu with dropdown -->
+                    <div class="relative" id="user-menu-container">
+                        <button onclick="toggleUserMenu()" class="flex items-center gap-2 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+                            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-pink-400 flex items-center justify-center text-white text-sm font-medium">
+                                <span id="user-avatar-letter">U</span>
+                            </div>
+                        </button>
+                        <!-- Dropdown menu -->
+                        <div id="user-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-200 dark:border-slate-700 py-2 z-50">
+                            <div class="px-4 py-2 border-b border-gray-200 dark:border-slate-700">
+                                <p id="user-display-name" class="text-sm font-medium text-gray-900 dark:text-white">用户</p>
+                                <p id="user-display-email" class="text-xs text-gray-500 dark:text-gray-400">user@example.com</p>
+                            </div>
+                            <button onclick="logout()" class="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                                </svg>
+                                退出登录
+                            </button>
                         </div>
-                    </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -371,18 +395,35 @@
                         <div class="flex items-end gap-3">
                             <!-- Multimodal input buttons -->
                             <div class="flex gap-2">
-                                <button onclick="document.getElementById('audio-input').click()" class="p-3 rounded-xl bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors" title="语音输入">
+                                <!-- Voice Recording Button (Press to talk) -->
+                                <button id="voice-btn"
+                                    onmousedown="startRecording(event)"
+                                    onmouseup="stopRecording(event)"
+                                    ontouchstart="startRecording(event)"
+                                    ontouchend="stopRecording(event)"
+                                    class="p-3 rounded-xl bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors relative select-none"
+                                    title="按住说话，上滑取消">
                                     <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
                                     </svg>
                                 </button>
                                 <input type="file" id="audio-input" accept="audio/*" class="hidden" onchange="handleAudioUpload(event)">
+
+                                <!-- Image Upload Button -->
                                 <button onclick="document.getElementById('image-input').click()" class="p-3 rounded-xl bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors" title="图片输入">
                                     <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                                     </svg>
                                 </button>
                                 <input type="file" id="image-input" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+
+                                <!-- Camera Button -->
+                                <button id="camera-btn" onclick="toggleCamera()" class="p-3 rounded-xl bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors relative" title="摄像头">
+                                    <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                    </svg>
+                                    <span id="camera-indicator" class="hidden absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-slate-700"></span>
+                                </button>
                             </div>
 
                             <!-- Text input -->
@@ -512,7 +553,62 @@
         </div>
     </div>
 
+    <!-- Recording Overlay -->
+    <div id="recording-overlay" class="fixed inset-0 z-[90] hidden bg-black/30 backdrop-blur-sm flex items-center justify-center">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center shadow-2xl">
+            <div id="recording-icon" class="w-20 h-20 mx-auto mb-4 rounded-full bg-red-500 flex items-center justify-center animate-pulse">
+                <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"></path>
+                    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"></path>
+                </svg>
+            </div>
+            <p class="text-lg font-semibold text-gray-900 dark:text-white mb-2">正在录音...</p>
+            <p id="recording-time" class="text-2xl font-bold text-red-500">00:00</p>
+            <p id="recording-status" class="text-sm text-gray-500 dark:text-gray-400 mt-4">松开发送 | 按 ESC 取消</p>
+        </div>
+    </div>
+
+    <!-- Camera Floating Window -->
+    <div id="camera-window" class="fixed top-20 right-4 z-50 hidden bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden" style="width: 280px;">
+        <div class="flex items-center justify-between px-3 py-2 bg-gray-100 dark:bg-slate-700 cursor-move" id="camera-header">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">实时情绪分析</span>
+            <button onclick="closeCamera()" class="p-1 hover:bg-gray-200 dark:hover:bg-slate-600 rounded">
+                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <div class="relative">
+            <video id="camera-video" autoplay playsinline muted class="w-full h-40 object-cover bg-black"></video>
+            <canvas id="camera-canvas" class="hidden"></canvas>
+        </div>
+        <div class="p-3 space-y-2">
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-600 dark:text-gray-400">综合情绪:</span>
+                <span id="camera-emotion" class="text-sm font-medium text-indigo-600 dark:text-indigo-400">分析中...</span>
+            </div>
+            <div class="w-full bg-gray-200 dark:bg-slate-600 rounded-full h-2">
+                <div id="camera-confidence" class="bg-indigo-500 h-2 rounded-full transition-all" style="width: 0%"></div>
+            </div>
+            <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                <span>唤醒度: <span id="camera-arousal">--</span></span>
+                <span>置信度: <span id="camera-conf-text">--%</span></span>
+            </div>
+            <div class="border-t border-gray-200 dark:border-slate-600 pt-2 mt-2 text-xs text-gray-500 dark:text-gray-400">
+                <div class="flex justify-between">
+                    <span>视频:</span>
+                    <span id="camera-video-emotion">分析中...</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>音频:</span>
+                    <span id="camera-audio-emotion">分析中...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- JavaScript -->
+    <script src="js/auth.js"></script>
     <script src="js/app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </body>

@@ -42,11 +42,119 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Check API health
     checkAPIHealth();
+
+    // Check if user is admin and show admin entry
+    checkAdminAccess();
+
+    // Update user info display
+    updateUserDisplay();
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        const container = document.getElementById('user-menu-container');
+        if (container && !container.contains(e.target)) {
+            document.getElementById('user-dropdown')?.classList.add('hidden');
+        }
+    });
 });
 
 // =====================================================
 // API Communication
 // =====================================================
+
+// Check if current user is admin and show admin entry button
+async function checkAdminAccess() {
+    // First check locally stored user info
+    if (typeof Auth !== 'undefined' && Auth.isAdmin()) {
+        showAdminEntry();
+        return;
+    }
+
+    // If not found locally, try to fetch from API
+    const token = localStorage.getItem('selfagent_token');
+    if (!token) {
+        console.log('No token found, admin entry hidden');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (response.ok) {
+            const user = await response.json();
+            console.log('User info:', user);
+            // Show admin entry if user is admin
+            if (user.role === 'admin') {
+                showAdminEntry();
+            }
+        }
+    } catch (error) {
+        console.log('Admin check failed:', error);
+    }
+}
+
+function showAdminEntry() {
+    const adminEntry = document.getElementById('admin-entry');
+    if (adminEntry) {
+        adminEntry.classList.remove('hidden');
+        adminEntry.classList.add('flex');
+        console.log('Admin entry shown');
+    }
+}
+
+// =====================================================
+// User Menu Functions
+// =====================================================
+
+function toggleUserMenu() {
+    const dropdown = document.getElementById('user-dropdown');
+    if (dropdown) {
+        dropdown.classList.toggle('hidden');
+    }
+}
+
+function updateUserDisplay() {
+    // Get user info from localStorage
+    const userStr = localStorage.getItem('selfagent_user');
+    if (!userStr) return;
+
+    try {
+        const user = JSON.parse(userStr);
+
+        // Update avatar letter
+        const avatarLetter = document.getElementById('user-avatar-letter');
+        if (avatarLetter && user.username) {
+            avatarLetter.textContent = user.username.charAt(0).toUpperCase();
+        }
+
+        // Update display name
+        const displayName = document.getElementById('user-display-name');
+        if (displayName) {
+            displayName.textContent = user.username || '用户';
+        }
+
+        // Update email
+        const displayEmail = document.getElementById('user-display-email');
+        if (displayEmail) {
+            displayEmail.textContent = user.email || '';
+        }
+    } catch (e) {
+        console.log('Failed to parse user info:', e);
+    }
+}
+
+function logout() {
+    // Clear stored credentials
+    localStorage.removeItem('selfagent_token');
+    localStorage.removeItem('selfagent_user');
+
+    // Redirect to login page
+    window.location.href = 'login.html';
+}
 
 async function checkAPIHealth() {
     try {
@@ -327,6 +435,407 @@ function formatFileSize(bytes) {
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+// =====================================================
+// Voice Recording (Press to Talk)
+// =====================================================
+
+let mediaRecorder = null;
+let audioChunks = [];
+let recordingStartTime = null;
+let recordingTimer = null;
+let isRecordingCancelled = false;
+let touchStartY = null;
+let shouldCancelOnSwipe = false;
+const SWIPE_CANCEL_THRESHOLD = 80; // pixels to swipe up to cancel
+
+async function startRecording(event) {
+    // Prevent default to avoid text selection on long press
+    if (event) {
+        event.preventDefault();
+    }
+
+    // Track touch start position for swipe detection
+    if (event && event.touches && event.touches.length > 0) {
+        touchStartY = event.touches[0].clientY;
+        shouldCancelOnSwipe = false;
+    }
+
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+        isRecordingCancelled = false;
+
+        mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+                audioChunks.push(event.data);
+            }
+        };
+
+        mediaRecorder.onstop = () => {
+            stream.getTracks().forEach(track => track.stop());
+
+            if (!isRecordingCancelled && audioChunks.length > 0) {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                const audioFile = new File([audioBlob], `recording_${Date.now()}.webm`, { type: 'audio/webm' });
+                state.uploadedFile = audioFile;
+                showFilePreview(audioFile);
+                sendMessage(); // Auto send after recording
+            }
+        };
+
+        mediaRecorder.start();
+        recordingStartTime = Date.now();
+
+        // Show recording overlay
+        const overlay = document.getElementById('recording-overlay');
+        overlay.classList.remove('hidden');
+        document.getElementById('voice-btn').classList.add('bg-red-500');
+        updateRecordingOverlayState(false); // Normal state
+
+        // Update timer
+        recordingTimer = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
+            const mins = Math.floor(elapsed / 60).toString().padStart(2, '0');
+            const secs = (elapsed % 60).toString().padStart(2, '0');
+            document.getElementById('recording-time').textContent = `${mins}:${secs}`;
+        }, 100);
+
+    } catch (error) {
+        console.error('Failed to start recording:', error);
+        showError('无法访问麦克风，请检查权限设置');
+    }
+}
+
+function handleRecordingTouchMove(event) {
+    if (!mediaRecorder || mediaRecorder.state !== 'recording' || touchStartY === null) {
+        return;
+    }
+
+    const currentY = event.touches[0].clientY;
+    const deltaY = touchStartY - currentY; // Positive = swiped up
+
+    if (deltaY > SWIPE_CANCEL_THRESHOLD) {
+        shouldCancelOnSwipe = true;
+        updateRecordingOverlayState(true); // Cancel state
+    } else {
+        shouldCancelOnSwipe = false;
+        updateRecordingOverlayState(false); // Normal state
+    }
+}
+
+function updateRecordingOverlayState(isCancelState) {
+    const recordingIcon = document.getElementById('recording-icon');
+    const statusText = document.getElementById('recording-status');
+
+    if (isCancelState) {
+        // Cancel state - show cancel UI
+        if (recordingIcon) {
+            recordingIcon.classList.remove('bg-red-500');
+            recordingIcon.classList.add('bg-gray-500');
+        }
+        if (statusText) {
+            statusText.textContent = '松开取消发送';
+            statusText.classList.add('text-red-500');
+            statusText.classList.remove('text-gray-500', 'dark:text-gray-400');
+        }
+    } else {
+        // Normal state - show send UI
+        if (recordingIcon) {
+            recordingIcon.classList.remove('bg-gray-500');
+            recordingIcon.classList.add('bg-red-500');
+        }
+        if (statusText) {
+            statusText.textContent = '松开发送 | 按 ESC 取消';
+            statusText.classList.remove('text-red-500');
+            statusText.classList.add('text-gray-500', 'dark:text-gray-400');
+        }
+    }
+}
+
+function stopRecording(event) {
+    if (event) {
+        event.preventDefault();
+    }
+
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        // Check if we should cancel due to swipe
+        if (shouldCancelOnSwipe) {
+            cancelRecording();
+            return;
+        }
+
+        clearInterval(recordingTimer);
+        document.getElementById('recording-overlay').classList.add('hidden');
+        document.getElementById('voice-btn').classList.remove('bg-red-500');
+        mediaRecorder.stop();
+    }
+
+    // Reset touch tracking
+    touchStartY = null;
+    shouldCancelOnSwipe = false;
+}
+
+function cancelRecording() {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        isRecordingCancelled = true;
+        clearInterval(recordingTimer);
+        document.getElementById('recording-overlay').classList.add('hidden');
+        document.getElementById('voice-btn').classList.remove('bg-red-500');
+        mediaRecorder.stop();
+        showError('录音已取消');
+    }
+
+    // Reset touch tracking
+    touchStartY = null;
+    shouldCancelOnSwipe = false;
+}
+
+// Handle ESC key to cancel recording
+function handleRecordingKeydown(event) {
+    if (event.key === 'Escape' && mediaRecorder && mediaRecorder.state === 'recording') {
+        cancelRecording();
+    }
+}
+
+// Handle click on overlay background to cancel recording
+function handleOverlayClick(event) {
+    // Only cancel if clicking on the overlay background, not the content
+    if (event.target.id === 'recording-overlay') {
+        cancelRecording();
+    }
+}
+
+// Handle global mouseup/touchend to stop recording (since overlay covers the button)
+function handleGlobalMouseUp(event) {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        stopRecording(event);
+    }
+}
+
+// Initialize recording event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    const voiceBtn = document.getElementById('voice-btn');
+    if (voiceBtn) {
+        // Add touch move listener to the whole document during recording
+        document.addEventListener('touchmove', handleRecordingTouchMove, { passive: true });
+    }
+
+    // Add ESC key listener
+    document.addEventListener('keydown', handleRecordingKeydown);
+
+    // Add global mouseup/touchend listener (for when overlay covers the button)
+    document.addEventListener('mouseup', handleGlobalMouseUp);
+    document.addEventListener('touchend', handleGlobalMouseUp);
+
+    // Note: We removed the overlay click-to-cancel since mouseup now handles it
+});
+
+// =====================================================
+// Camera / Video Analysis
+// =====================================================
+
+let cameraStream = null;
+let cameraAnalysisInterval = null;
+let cameraAudioRecorder = null;
+let cameraAudioChunks = [];
+
+async function toggleCamera() {
+    if (cameraStream) {
+        closeCamera();
+    } else {
+        await openCamera();
+    }
+}
+
+async function openCamera() {
+    try {
+        // 同时获取视频和音频
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'user', width: 320, height: 240 },
+            audio: true
+        });
+
+        const video = document.getElementById('camera-video');
+        video.srcObject = cameraStream;
+
+        // 设置音频录制器
+        const audioTracks = cameraStream.getAudioTracks();
+        if (audioTracks.length > 0) {
+            const audioStream = new MediaStream(audioTracks);
+            cameraAudioRecorder = new MediaRecorder(audioStream);
+            cameraAudioChunks = [];
+
+            cameraAudioRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) {
+                    cameraAudioChunks.push(e.data);
+                }
+            };
+
+            // 每2秒收集一次音频数据
+            cameraAudioRecorder.start(2000);
+        }
+
+        // Show camera window and indicator
+        document.getElementById('camera-window').classList.remove('hidden');
+        document.getElementById('camera-indicator').classList.remove('hidden');
+
+        // Make camera window draggable
+        makeDraggable(document.getElementById('camera-window'), document.getElementById('camera-header'));
+
+        // Start emotion analysis every 2 seconds
+        cameraAnalysisInterval = setInterval(analyzeFrame, 2000);
+
+    } catch (error) {
+        console.error('Failed to open camera:', error);
+        showError('无法访问摄像头，请检查权限设置');
+    }
+}
+
+function closeCamera() {
+    if (cameraAudioRecorder && cameraAudioRecorder.state !== 'inactive') {
+        cameraAudioRecorder.stop();
+        cameraAudioRecorder = null;
+    }
+    cameraAudioChunks = [];
+
+    if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+    }
+
+    if (cameraAnalysisInterval) {
+        clearInterval(cameraAnalysisInterval);
+        cameraAnalysisInterval = null;
+    }
+
+    document.getElementById('camera-window').classList.add('hidden');
+    document.getElementById('camera-indicator').classList.add('hidden');
+    document.getElementById('camera-video').srcObject = null;
+}
+
+async function analyzeFrame() {
+    if (!cameraStream) return;
+
+    const video = document.getElementById('camera-video');
+    const canvas = document.getElementById('camera-canvas');
+    const ctx = canvas.getContext('2d');
+
+    canvas.width = video.videoWidth || 320;
+    canvas.height = video.videoHeight || 240;
+    ctx.drawImage(video, 0, 0);
+
+    // 获取视频帧
+    const videoBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.8));
+    if (!videoBlob) return;
+
+    // 获取音频数据
+    let audioBlob = null;
+    if (cameraAudioChunks.length > 0) {
+        audioBlob = new Blob(cameraAudioChunks, { type: 'audio/webm' });
+        cameraAudioChunks = []; // 清空已处理的音频
+    }
+
+    try {
+        // 发送视频帧分析
+        const videoFormData = new FormData();
+        videoFormData.append('user_id', USER_ID);
+        videoFormData.append('text', '[实时视频分析]');
+        videoFormData.append('file', videoBlob, 'frame.jpg');
+
+        const videoResponse = await fetch(API_MULTIMODAL_ENDPOINT, {
+            method: 'POST',
+            body: videoFormData
+        });
+
+        let videoResult = null;
+        if (videoResponse.ok) {
+            videoResult = await videoResponse.json();
+        }
+
+        // 发送音频分析（如果有音频数据）
+        let audioResult = null;
+        if (audioBlob && audioBlob.size > 0) {
+            const audioFormData = new FormData();
+            audioFormData.append('user_id', USER_ID);
+            audioFormData.append('text', '[实时音频分析]');
+            audioFormData.append('file', audioBlob, 'audio.webm');
+
+            const audioResponse = await fetch(API_MULTIMODAL_ENDPOINT, {
+                method: 'POST',
+                body: audioFormData
+            });
+            if (audioResponse.ok) {
+                audioResult = await audioResponse.json();
+            }
+        }
+
+        // 解析后端返回的情绪数据
+        const videoEmotion = videoResult?.emotion?.name || '未知';
+        const videoConf = videoResult?.emotion?.confidence || 0;
+        const audioEmotion = audioResult?.emotion?.name || '无音频';
+        const audioConf = audioResult?.emotion?.confidence || 0;
+
+        // 综合情绪（取置信度较高的）
+        let finalEmotion, finalConf;
+        if (audioConf > videoConf && audioResult) {
+            finalEmotion = audioEmotion;
+            finalConf = audioConf;
+        } else {
+            finalEmotion = videoEmotion;
+            finalConf = videoConf;
+        }
+
+        const arousal = videoResult?.emotion?.arousal || audioResult?.emotion?.arousal || 0;
+
+        // 更新 UI
+        document.getElementById('camera-emotion').textContent = finalEmotion;
+        document.getElementById('camera-confidence').style.width = `${finalConf}%`;
+        document.getElementById('camera-conf-text').textContent = `${finalConf.toFixed(0)}%`;
+        document.getElementById('camera-arousal').textContent = arousal.toFixed(2);
+
+        // 更新视频/音频分别显示
+        const videoText = document.getElementById('camera-video-emotion');
+        const audioText = document.getElementById('camera-audio-emotion');
+        if (videoText) videoText.textContent = `${videoEmotion} ${videoConf.toFixed(0)}%`;
+        if (audioText) audioText.textContent = audioResult ? `${audioEmotion} ${audioConf.toFixed(0)}%` : '无音频';
+
+    } catch (error) {
+        console.error('Frame analysis failed:', error);
+    }
+}
+
+// Make element draggable
+function makeDraggable(element, handle) {
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+
+    handle.onmousedown = dragMouseDown;
+
+    function dragMouseDown(e) {
+        e.preventDefault();
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        document.onmouseup = closeDragElement;
+        document.onmousemove = elementDrag;
+    }
+
+    function elementDrag(e) {
+        e.preventDefault();
+        pos1 = pos3 - e.clientX;
+        pos2 = pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        element.style.top = (element.offsetTop - pos2) + "px";
+        element.style.left = (element.offsetLeft - pos1) + "px";
+        element.style.right = "auto";
+    }
+
+    function closeDragElement() {
+        document.onmouseup = null;
+        document.onmousemove = null;
+    }
 }
 
 // =====================================================
