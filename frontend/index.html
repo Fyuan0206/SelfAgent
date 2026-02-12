@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Self-Agent - 智能情绪支持系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans SC', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            200: '#c7d2fe',
+                            300: '#a5b4fc',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81',
+                        },
+                        accent: {
+                            50: '#fdf2f8',
+                            100: '#fce7f3',
+                            200: '#fbcfe8',
+                            300: '#f9a8d4',
+                            400: '#f472b6',
+                            500: '#ec4899',
+                            600: '#db2777',
+                            700: '#be185d',
+                            800: '#9d174d',
+                            900: '#831843',
+                        },
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        },
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Glassmorphism effect */
+        .glass {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        .dark .glass {
+            background: rgba(30, 41, 59, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Gradient background */
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        /* Message animations */
+        .message-enter {
+            animation: slideUp 0.3s ease-out;
+        }
+
+        /* Typing indicator */
+        .typing-dot {
+            animation: typingDot 1.4s infinite;
+        }
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        @keyframes typingDot {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-4px); }
+        }
+
+        /* Emotion card hover */
+        .emotion-card {
+            transition: all 0.3s ease;
+        }
+        .emotion-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px -15px rgba(79, 70, 229, 0.3);
+        }
+
+        /* Crisis button pulse */
+        .crisis-pulse {
+            animation: crisisPulse 2s ease-in-out infinite;
+        }
+        @keyframes crisisPulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+            50% {
+                box-shadow: 0 0 0 15px rgba(239, 68, 68, 0);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-50 via-white to-pink-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 min-h-screen font-sans">
+    <!-- Top Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 glass border-b border-gray-200/50 dark:border-gray-700/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl gradient-bg flex items-center justify-center shadow-lg">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-gray-900 dark:text-white">Self-Agent</h1>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">智能情绪支持系统</p>
+                    </div>
+                </div>
+
+                <!-- Right side -->
+                <div class="flex items-center gap-4">
+                    <!-- Crisis Button -->
+                    <button onclick="showCrisisModal()" class="hidden md:flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-full font-medium transition-colors crisis-pulse">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                        <span>紧急求助</span>
+                    </button>
+
+                    <!-- Dark mode toggle -->
+                    <button onclick="toggleDarkMode()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+                        <svg id="dark-icon" class="w-6 h-6 text-gray-600 dark:text-gray-300 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                        </svg>
+                        <svg id="light-icon" class="w-6 h-6 text-gray-600 dark:text-gray-300 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                        </svg>
+                    </button>
+
+                    <!-- Admin Entry (only visible for admin users) -->
+                    <a id="admin-entry" href="/admin" class="hidden items-center gap-2 px-3 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-sm font-medium transition-colors" title="管理后台">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        <span class="hidden md:inline">管理</span>
+                    </a>
+
+                    <!-- User menu with dropdown -->
+                    <div class="relative" id="user-menu-container">
+                        <button onclick="toggleUserMenu()" class="flex items-center gap-2 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+                            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-pink-400 flex items-center justify-center text-white text-sm font-medium">
+                                <span id="user-avatar-letter">U</span>
+                            </div>
+                        </button>
+                        <!-- Dropdown menu -->
+                        <div id="user-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-200 dark:border-slate-700 py-2 z-50">
+                            <div class="px-4 py-2 border-b border-gray-200 dark:border-slate-700">
+                                <p id="user-display-name" class="text-sm font-medium text-gray-900 dark:text-white">用户</p>
+                                <p id="user-display-email" class="text-xs text-gray-500 dark:text-gray-400">user@example.com</p>
+                            </div>
+                            <button onclick="logout()" class="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                                </svg>
+                                退出登录
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="pt-20 pb-8 px-4 sm:px-6 lg:px-8 max-w-screen-2xl mx-auto">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- Left Sidebar - Emotion Dashboard -->
+            <div class="lg:col-span-3 space-y-6">
+                <!-- Current Emotion Card -->
+                <div id="current-emotion-card" class="glass rounded-2xl p-6 shadow-xl hidden">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">当前情绪</h2>
+                        <span id="emotion-badge" class="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-xs font-medium rounded-full">
+                            分析中...
+                        </span>
+                    </div>
+                    <div class="relative h-40">
+                        <canvas id="emotionChart"></canvas>
+                    </div>
+                    <p id="emotion-insight" class="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                        正在分析您的情绪状态...
+                    </p>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="glass rounded-2xl p-6 shadow-xl">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">快速工具</h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="showModal('breathing')" class="flex flex-col items-center gap-2 p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-colors cursor-pointer">
+                            <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path>
+                            </svg>
+                            <span class="text-xs font-medium text-gray-700 dark:text-gray-300">呼吸练习</span>
+                        </button>
+                        <button onclick="showModal('journal')" class="flex flex-col items-center gap-2 p-4 bg-pink-50 dark:bg-pink-900/20 rounded-xl hover:bg-pink-100 dark:hover:bg-pink-900/30 transition-colors cursor-pointer">
+                            <svg class="w-6 h-6 text-pink-600 dark:text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                            <span class="text-xs font-medium text-gray-700 dark:text-gray-300">情绪日记</span>
+                        </button>
+                        <button onclick="showModal('skills')" class="flex flex-col items-center gap-2 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors cursor-pointer">
+                            <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+                            </svg>
+                            <span class="text-xs font-medium text-gray-700 dark:text-gray-300">DBT技能</span>
+                        </button>
+                        <button onclick="showModal('history')" class="flex flex-col items-center gap-2 p-4 bg-teal-50 dark:bg-teal-900/20 rounded-xl hover:bg-teal-100 dark:hover:bg-teal-900/30 transition-colors cursor-pointer">
+                            <svg class="w-6 h-6 text-teal-600 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span class="text-xs font-medium text-gray-700 dark:text-gray-300">历史对话</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Recent Emotions -->
+                <div id="recent-emotions-card" class="glass rounded-2xl p-6 shadow-xl hidden">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">最近情绪</h3>
+                    <div id="recent-emotions-list" class="space-y-3">
+                        <!-- Content will be injected via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Chat Area -->
+            <div class="lg:col-span-9">
+                <div class="glass rounded-2xl shadow-xl flex flex-col h-[calc(100vh-140px)]">
+                    <!-- Chat Header -->
+                    <div class="flex items-center justify-between p-4 border-b border-gray-200/50 dark:border-gray-700/50">
+                        <div class="flex items-center gap-3">
+                            <div class="relative">
+                                <div class="w-12 h-12 rounded-full gradient-bg flex items-center justify-center shadow-lg">
+                                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                                    </svg>
+                                </div>
+                                <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                            </div>
+                            <div>
+                                <h2 class="text-base font-semibold text-gray-900 dark:text-white">Self-Agent</h2>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">在线 · 随时为您提供支持</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <!-- Mobile crisis button -->
+                            <button onclick="showCrisisModal()" class="md:hidden flex items-center gap-1 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full text-sm font-medium transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                </svg>
+                                紧急
+                            </button>
+                            <button onclick="clearChat()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors" title="清空聊天">
+                            <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                        </button>
+                        <button onclick="startNewChat()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors" title="新开窗口">
+                            <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                            </svg>
+                        </button>
+                        </div>
+                    </div>
+
+                    <!-- Messages Container -->
+                    <div id="messages-container" class="flex-1 overflow-y-auto p-4 space-y-4">
+                        <!-- Welcome message -->
+                        <div class="flex items-start gap-3 message-enter">
+                            <div class="w-8 h-8 rounded-full gradient-bg flex items-center justify-center flex-shrink-0 shadow">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <div class="bg-white dark:bg-slate-700 rounded-2xl rounded-tl-sm p-4 shadow-sm">
+                                    <p class="text-gray-800 dark:text-gray-100">你好！我是你的 AI 情绪伙伴 👋</p>
+                                    <p class="text-gray-800 dark:text-gray-100 mt-2">我可以感知你的情绪并提供支持。你可以：</p>
+                                    <ul class="mt-2 space-y-1 text-gray-700 dark:text-gray-300">
+                                        <li class="flex items-start gap-2">
+                                            <span class="text-indigo-500 mt-0.5">•</span>
+                                            <span>分享你的感受和想法</span>
+                                        </li>
+                                        <li class="flex items-start gap-2">
+                                            <span class="text-indigo-500 mt-0.5">•</span>
+                                            <span>发送语音或图片表达情绪</span>
+                                        </li>
+                                        <li class="flex items-start gap-2">
+                                            <span class="text-indigo-500 mt-0.5">•</span>
+                                            <span>获取 DBT 技能指导</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <span class="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-2">刚刚</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Input Area -->
+                    <div class="p-4 border-t border-gray-200/50 dark:border-gray-700/50">
+                        <!-- Emotion Quick Tags -->
+                        <div class="flex gap-2 mb-3 overflow-x-auto pb-2">
+                            <button onclick="quickEmotion('开心')" class="flex-shrink-0 px-3 py-1.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-full text-sm font-medium hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-colors">
+                                😊 开心
+                            </button>
+                            <button onclick="quickEmotion('焦虑')" class="flex-shrink-0 px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full text-sm font-medium hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                😰 焦虑
+                            </button>
+                            <button onclick="quickEmotion('难过')" class="flex-shrink-0 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                                😢 难过
+                            </button>
+                            <button onclick="quickEmotion('愤怒')" class="flex-shrink-0 px-3 py-1.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-full text-sm font-medium hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors">
+                                😠 愤怒
+                            </button>
+                            <button onclick="quickEmotion('疲惫')" class="flex-shrink-0 px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-full text-sm font-medium hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors">
+                                😴 疲惫
+                            </button>
+                        </div>
+
+                        <!-- Input Controls -->
+                        <div class="flex items-end gap-3">
+                            <!-- Multimodal input buttons -->
+                            <div class="flex gap-2">
+                                <!-- Voice Recording Button (Press to talk) -->
+                                <button id="voice-btn"
+                                    onmousedown="startRecording(event)"
+                                    onmouseup="stopRecording(event)"
+                                    ontouchstart="startRecording(event)"
+                                    ontouchend="stopRecording(event)"
+                                    class="p-3 rounded-xl bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors relative select-none"
+                                    title="按住说话，上滑取消">
+                                    <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+                                    </svg>
+                                </button>
+                                <input type="file" id="audio-input" accept="audio/*" class="hidden" onchange="handleAudioUpload(event)">
+
+                                <!-- Image Upload Button -->
+                                <button onclick="document.getElementById('image-input').click()" class="p-3 rounded-xl bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors" title="图片输入">
+                                    <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                    </svg>
+                                </button>
+                                <input type="file" id="image-input" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+
+                                <!-- Camera Button -->
+                                <button id="camera-btn" onclick="toggleCamera()" class="p-3 rounded-xl bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors relative" title="摄像头">
+                                    <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                    </svg>
+                                    <span id="camera-indicator" class="hidden absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-slate-700"></span>
+                                </button>
+                            </div>
+
+                            <!-- Text input -->
+                            <div class="flex-1 relative">
+                                <textarea id="message-input" rows="1" placeholder="告诉我你现在的感受..." class="w-full px-4 py-3 bg-gray-100 dark:bg-slate-700 border-0 rounded-xl resize-none focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-slate-600 transition-all text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" onkeydown="handleKeyDown(event)" oninput="autoResize(this)"></textarea>
+                            </div>
+
+                            <!-- Send button -->
+                            <button onclick="sendMessage()" class="p-3 rounded-xl gradient-bg text-white hover:opacity-90 transition-opacity shadow-lg" title="发送">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- File preview -->
+                        <div id="file-preview" class="hidden mt-3 p-3 bg-gray-100 dark:bg-slate-700 rounded-xl flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p id="file-name" class="text-sm font-medium text-gray-900 dark:text-white">audio.mp3</p>
+                                    <p id="file-size" class="text-xs text-gray-500 dark:text-gray-400">2.4 MB</p>
+                                </div>
+                            </div>
+                            <button onclick="clearFile()" class="p-2 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-lg transition-colors">
+                                <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Crisis Modal -->
+    <div id="crisis-modal" class="fixed inset-0 z-[100] hidden">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="hideCrisisModal()"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-lg w-full p-6 relative animate-slide-up">
+                <button onclick="hideCrisisModal()" class="absolute top-4 right-4 p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">危机干预支持</h3>
+                    <p class="text-gray-600 dark:text-gray-400">我们非常关心您的安全。请立即寻求专业帮助。</p>
+                </div>
+
+                <div class="space-y-3 mb-6">
+                    <a href="tel:400-161-9995" class="flex items-center gap-4 p-4 bg-red-50 dark:bg-red-900/20 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
+                        <div class="w-12 h-12 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-semibold text-gray-900 dark:text-white">全国心理援助热线</p>
+                            <p class="text-2xl font-bold text-red-600 dark:text-red-400">400-161-9995</p>
+                        </div>
+                    </a>
+
+                    <a href="tel:010-82951332" class="flex items-center gap-4 p-4 bg-gray-50 dark:bg-slate-700 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-600 transition-colors">
+                        <div class="w-12 h-12 rounded-full bg-gray-500 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-semibold text-gray-900 dark:text-white">北京危机干预热线</p>
+                            <p class="text-xl font-bold text-gray-600 dark:text-gray-300">010-82951332</p>
+                        </div>
+                    </a>
+                </div>
+
+                <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-4">
+                    <h4 class="font-semibold text-indigo-900 dark:text-indigo-300 mb-2">重要提醒</h4>
+                    <ul class="space-y-1 text-sm text-indigo-700 dark:text-indigo-400">
+                        <li>• 您不是一个人</li>
+                        <li>• 这种感觉会过去</li>
+                        <li>• 请给自己一个机会</li>
+                        <li>• 专业帮助可以带来改变</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Breathing Exercise Modal -->
+    <div id="breathing-modal" class="fixed inset-0 z-[100] hidden">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="hideModal('breathing')"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-8 text-center relative animate-slide-up">
+                <button onclick="hideModal('breathing')" class="absolute top-4 right-4 p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">呼吸练习</h3>
+
+                <div class="relative w-48 h-48 mx-auto mb-6">
+                    <div id="breathing-circle" class="absolute inset-0 rounded-full bg-gradient-to-br from-indigo-400 to-pink-400 opacity-20"></div>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span id="breathing-text" class="text-2xl font-semibold text-gray-700 dark:text-gray-300">准备</span>
+                    </div>
+                </div>
+
+                <p class="text-gray-600 dark:text-gray-400 mb-6">跟随圆圈的缩放调整呼吸节奏</p>
+
+                <button onclick="startBreathing()" class="w-full py-3 px-6 gradient-bg text-white rounded-xl font-medium hover:opacity-90 transition-opacity shadow-lg">
+                    开始练习
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DBT Skills Modal -->
+    <div id="skills-modal" class="fixed inset-0 z-[100] hidden">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="hideModal('skills')"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-4xl w-full h-[80vh] flex flex-col relative animate-slide-up">
+                <!-- Header -->
+                <div class="p-6 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center">
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900 dark:text-white">DBT 技能库</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">辩证行为疗法技能手册</p>
+                    </div>
+                    <button onclick="hideModal('skills')" class="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                        <svg class="w-6 h-6 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Content -->
+                <div class="flex-1 overflow-hidden flex">
+                    <!-- Sidebar Modules -->
+                    <div class="w-1/4 border-r border-gray-200 dark:border-slate-700 overflow-y-auto p-4 space-y-2 bg-gray-50 dark:bg-slate-900/50" id="dbt-modules-list">
+                        <!-- Module items will be injected here -->
+                        <div class="animate-pulse space-y-3">
+                            <div class="h-10 bg-gray-200 dark:bg-slate-700 rounded-lg"></div>
+                            <div class="h-10 bg-gray-200 dark:bg-slate-700 rounded-lg"></div>
+                            <div class="h-10 bg-gray-200 dark:bg-slate-700 rounded-lg"></div>
+                            <div class="h-10 bg-gray-200 dark:bg-slate-700 rounded-lg"></div>
+                        </div>
+                    </div>
+
+                    <!-- Main Skills List -->
+                    <div class="flex-1 overflow-y-auto p-6" id="dbt-skills-content">
+                        <!-- Skills will be injected here -->
+                        <div class="text-center text-gray-500 mt-20">
+                            请选择左侧模块查看技能
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div id="history-modal" class="fixed inset-0 z-[100] hidden">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="hideModal('history')"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-4xl w-full h-[80vh] flex flex-col relative animate-slide-up">
+                <!-- Header -->
+                <div class="p-6 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center">
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900 dark:text-white">历史对话</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">查看过往的互动记录</p>
+                    </div>
+                    <button onclick="hideModal('history')" class="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                        <svg class="w-6 h-6 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Content -->
+                <div class="flex-1 overflow-y-auto p-6" id="history-content">
+                    <div class="space-y-6" id="history-list">
+                        <!-- History items will be injected here -->
+                        <div class="text-center text-gray-500 mt-20">
+                            加载中...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recording Overlay -->
+    <div id="recording-overlay" class="fixed inset-0 z-[90] hidden bg-black/30 backdrop-blur-sm flex items-center justify-center">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center shadow-2xl">
+            <div id="recording-icon" class="w-20 h-20 mx-auto mb-4 rounded-full bg-red-500 flex items-center justify-center animate-pulse">
+                <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"></path>
+                    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"></path>
+                </svg>
+            </div>
+            <p class="text-lg font-semibold text-gray-900 dark:text-white mb-2">正在录音...</p>
+            <p id="recording-time" class="text-2xl font-bold text-red-500">00:00</p>
+            <p id="recording-status" class="text-sm text-gray-500 dark:text-gray-400 mt-4">松开发送 | 按 ESC 取消</p>
+        </div>
+    </div>
+
+    <!-- Camera Floating Window -->
+    <div id="camera-window" class="fixed top-20 right-4 z-50 hidden bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden" style="width: 280px;">
+        <div class="flex items-center justify-between px-3 py-2 bg-gray-100 dark:bg-slate-700 cursor-move" id="camera-header">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">实时情绪分析</span>
+            <button onclick="closeCamera()" class="p-1 hover:bg-gray-200 dark:hover:bg-slate-600 rounded">
+                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <div class="relative">
+            <video id="camera-video" autoplay playsinline muted class="w-full h-40 object-cover bg-black"></video>
+            <canvas id="camera-canvas" class="hidden"></canvas>
+        </div>
+        <div class="p-3 space-y-2">
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-600 dark:text-gray-400">综合情绪:</span>
+                <span id="camera-emotion" class="text-sm font-medium text-indigo-600 dark:text-indigo-400">分析中...</span>
+            </div>
+            <div class="w-full bg-gray-200 dark:bg-slate-600 rounded-full h-2">
+                <div id="camera-confidence" class="bg-indigo-500 h-2 rounded-full transition-all" style="width: 0%"></div>
+            </div>
+            <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                <span>唤醒度: <span id="camera-arousal">--</span></span>
+                <span>置信度: <span id="camera-conf-text">--%</span></span>
+            </div>
+            <div class="border-t border-gray-200 dark:border-slate-600 pt-2 mt-2 text-xs text-gray-500 dark:text-gray-400">
+                <div class="flex justify-between">
+                    <span>视频:</span>
+                    <span id="camera-video-emotion">分析中...</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>音频:</span>
+                    <span id="camera-audio-emotion">分析中...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="js/auth.js"></script>
+    <script src="js/app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</body>
+</html>

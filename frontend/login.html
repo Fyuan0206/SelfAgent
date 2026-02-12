@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - Self-Agent</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans SC', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            200: '#c7d2fe',
+                            300: '#a5b4fc',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81',
+                        },
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .dark .glass {
+            background: rgba(30, 41, 59, 0.9);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-pink-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 font-sans flex items-center justify-center p-4">
+    <!-- Background decoration -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute -top-40 -right-40 w-80 h-80 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse"></div>
+        <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse"></div>
+    </div>
+
+    <!-- Login Card -->
+    <div class="relative w-full max-w-md">
+        <!-- Logo -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl gradient-bg shadow-lg mb-4">
+                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                </svg>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Self-Agent</h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-1">智能情绪支持系统</p>
+        </div>
+
+        <!-- Form Card -->
+        <div class="glass rounded-2xl shadow-xl p-8">
+            <!-- Tab Switcher -->
+            <div class="flex mb-6 bg-gray-100 dark:bg-slate-700 rounded-xl p-1">
+                <button id="login-tab" onclick="switchTab('login')" class="flex-1 py-2.5 text-sm font-medium rounded-lg transition-all bg-white dark:bg-slate-600 text-gray-900 dark:text-white shadow">
+                    登录
+                </button>
+                <button id="register-tab" onclick="switchTab('register')" class="flex-1 py-2.5 text-sm font-medium rounded-lg transition-all text-gray-500 dark:text-gray-400">
+                    注册
+                </button>
+            </div>
+
+            <!-- Error Message -->
+            <div id="error-message" class="hidden mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-600 dark:text-red-400 text-sm">
+            </div>
+
+            <!-- Success Message -->
+            <div id="success-message" class="hidden mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl text-green-600 dark:text-green-400 text-sm">
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">邮箱</label>
+                        <input type="email" id="login-email" required
+                            class="w-full px-4 py-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-gray-900 dark:text-white placeholder-gray-400"
+                            placeholder="your@email.com">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">密码</label>
+                        <div class="relative">
+                            <input type="password" id="login-password" required
+                                class="w-full px-4 py-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-gray-900 dark:text-white placeholder-gray-400 pr-12"
+                                placeholder="输入密码">
+                            <button type="button" id="login-toggle" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">
+                                显示
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" id="login-btn"
+                    class="w-full mt-6 py-3 px-4 gradient-bg text-white font-medium rounded-xl hover:opacity-90 transition-opacity shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span id="login-btn-text">登录</span>
+                    <svg id="login-spinner" class="hidden animate-spin h-5 w-5 mx-auto text-white" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="register-form" class="hidden" onsubmit="handleRegister(event)">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">用户名</label>
+                        <input type="text" id="register-username" required
+                            class="w-full px-4 py-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-gray-900 dark:text-white placeholder-gray-400"
+                            placeholder="输入用户名">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">邮箱</label>
+                        <input type="email" id="register-email" required
+                            class="w-full px-4 py-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-gray-900 dark:text-white placeholder-gray-400"
+                            placeholder="your@email.com">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">密码</label>
+                        <div class="relative">
+                            <input type="password" id="register-password" required minlength="6"
+                                class="w-full px-4 py-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-gray-900 dark:text-white placeholder-gray-400 pr-12"
+                                placeholder="至少6位密码">
+                            <button type="button" id="register-toggle" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">
+                                显示
+                            </button>
+                        </div>
+                        <div class="mt-2">
+                            <div class="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
+                                <div id="strength-bar" class="h-2 rounded-full bg-red-500" style="width: 0%"></div>
+                            </div>
+                            <p id="strength-text" class="text-xs mt-1 text-gray-500 dark:text-gray-400">密码强度较弱</p>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">确认密码</label>
+                        <div class="relative">
+                            <input type="password" id="register-confirm" required
+                                class="w-full px-4 py-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-gray-900 dark:text-white placeholder-gray-400 pr-12"
+                                placeholder="再次输入密码">
+                            <button type="button" id="confirm-toggle" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">
+                                显示
+                            </button>
+                        </div>
+                        <p id="match-hint" class="text-xs mt-1 text-gray-500 dark:text-gray-400"></p>
+                    </div>
+                </div>
+                <button type="submit" id="register-btn"
+                    class="w-full mt-6 py-3 px-4 gradient-bg text-white font-medium rounded-xl hover:opacity-90 transition-opacity shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span id="register-btn-text">注册</span>
+                    <svg id="register-spinner" class="hidden animate-spin h-5 w-5 mx-auto text-white" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </button>
+            </form>
+
+            <!-- Admin Link -->
+            <div class="mt-6 pt-6 border-t border-gray-200 dark:border-slate-700 text-center">
+                <a href="admin.html" class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">
+                    管理员入口
+                </a>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <p class="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
+            继续即表示您同意我们的服务条款和隐私政策
+        </p>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        // Tab switching
+        function switchTab(tab) {
+            const loginTab = document.getElementById('login-tab');
+            const registerTab = document.getElementById('register-tab');
+            const loginForm = document.getElementById('login-form');
+            const registerForm = document.getElementById('register-form');
+
+            hideMessages();
+
+            if (tab === 'login') {
+                loginTab.classList.add('bg-white', 'dark:bg-slate-600', 'text-gray-900', 'dark:text-white', 'shadow');
+                loginTab.classList.remove('text-gray-500', 'dark:text-gray-400');
+                registerTab.classList.remove('bg-white', 'dark:bg-slate-600', 'text-gray-900', 'dark:text-white', 'shadow');
+                registerTab.classList.add('text-gray-500', 'dark:text-gray-400');
+                loginForm.classList.remove('hidden');
+                registerForm.classList.add('hidden');
+            } else {
+                registerTab.classList.add('bg-white', 'dark:bg-slate-600', 'text-gray-900', 'dark:text-white', 'shadow');
+                registerTab.classList.remove('text-gray-500', 'dark:text-gray-400');
+                loginTab.classList.remove('bg-white', 'dark:bg-slate-600', 'text-gray-900', 'dark:text-white', 'shadow');
+                loginTab.classList.add('text-gray-500', 'dark:text-gray-400');
+                registerForm.classList.remove('hidden');
+                loginForm.classList.add('hidden');
+            }
+        }
+
+        function showError(message) {
+            const el = document.getElementById('error-message');
+            el.textContent = message;
+            el.classList.remove('hidden');
+            document.getElementById('success-message').classList.add('hidden');
+        }
+
+        function showSuccess(message) {
+            const el = document.getElementById('success-message');
+            el.textContent = message;
+            el.classList.remove('hidden');
+            document.getElementById('error-message').classList.add('hidden');
+        }
+
+        function hideMessages() {
+            document.getElementById('error-message').classList.add('hidden');
+            document.getElementById('success-message').classList.add('hidden');
+        }
+
+        function setLoading(form, loading) {
+            const btn = document.getElementById(`${form}-btn`);
+            const text = document.getElementById(`${form}-btn-text`);
+            const spinner = document.getElementById(`${form}-spinner`);
+
+            btn.disabled = loading;
+            if (loading) {
+                text.classList.add('hidden');
+                spinner.classList.remove('hidden');
+            } else {
+                text.classList.remove('hidden');
+                spinner.classList.add('hidden');
+            }
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            hideMessages();
+            setLoading('login', true);
+
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            try {
+                await Auth.login(email, password);
+                showSuccess('登录成功，正在跳转...');
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1000);
+            } catch (error) {
+                showError(error.message || '登录失败，请检查邮箱和密码');
+            } finally {
+                setLoading('login', false);
+            }
+        }
+
+        async function handleRegister(event) {
+            event.preventDefault();
+            hideMessages();
+
+            const username = document.getElementById('register-username').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            const confirm = document.getElementById('register-confirm').value;
+
+            if (password !== confirm) {
+                showError('两次输入的密码不一致');
+                return;
+            }
+
+            if (password.length < 6) {
+                showError('密码至少需要6位');
+                return;
+            }
+
+            setLoading('register', true);
+
+            try {
+                await Auth.register(email, username, password);
+                showSuccess('注册成功，正在跳转...');
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1000);
+            } catch (error) {
+                showError(error.message || '注册失败，请稍后重试');
+            } finally {
+                setLoading('register', false);
+            }
+        }
+
+        // Check if already logged in
+        document.addEventListener('DOMContentLoaded', () => {
+            if (Auth.isLoggedIn()) {
+                window.location.href = 'index.html';
+            }
+
+            // Initialize dark mode
+            if (localStorage.getItem('darkMode') === 'true') {
+                document.documentElement.classList.add('dark');
+            }
+
+            const loginToggle = document.getElementById('login-toggle')
+            const loginPwd = document.getElementById('login-password')
+            loginToggle?.addEventListener('click', () => {
+                const t = loginPwd.getAttribute('type') === 'password' ? 'text' : 'password'
+                loginPwd.setAttribute('type', t)
+                loginToggle.textContent = t === 'password' ? '显示' : '隐藏'
+            })
+
+            const regPwd = document.getElementById('register-password')
+            const regToggle = document.getElementById('register-toggle')
+            const confPwd = document.getElementById('register-confirm')
+            const confToggle = document.getElementById('confirm-toggle')
+            const bar = document.getElementById('strength-bar')
+            const text = document.getElementById('strength-text')
+            const matchHint = document.getElementById('match-hint')
+
+            const calcStrength = (v) => {
+                let s = 0
+                if (v.length >= 6) s += 25
+                if (/[A-Z]/.test(v)) s += 25
+                if (/[a-z]/.test(v)) s += 25
+                if (/\d|[^A-Za-z0-9]/.test(v)) s += 25
+                return s
+            }
+            const updateStrength = () => {
+                const v = regPwd.value
+                const s = calcStrength(v)
+                bar.style.width = s + '%'
+                bar.className = 'h-2 rounded-full ' + (s < 50 ? 'bg-red-500' : s < 75 ? 'bg-yellow-500' : 'bg-green-500')
+                text.textContent = s < 50 ? '密码强度较弱' : s < 75 ? '密码强度一般' : '密码强度较强'
+                document.getElementById('register-btn').disabled = !(s >= 50 && v === confPwd.value && v.length >= 6)
+            }
+            const updateMatch = () => {
+                matchHint.textContent = confPwd.value && regPwd.value !== confPwd.value ? '两次输入不一致' : ''
+                updateStrength()
+            }
+            regPwd.addEventListener('input', updateStrength)
+            confPwd.addEventListener('input', updateMatch)
+
+            regToggle?.addEventListener('click', () => {
+                const t = regPwd.getAttribute('type') === 'password' ? 'text' : 'password'
+                regPwd.setAttribute('type', t)
+                regToggle.textContent = t === 'password' ? '显示' : '隐藏'
+            })
+            confToggle?.addEventListener('click', () => {
+                const t = confPwd.getAttribute('type') === 'password' ? 'text' : 'password'
+                confPwd.setAttribute('type', t)
+                confToggle.textContent = t === 'password' ? '显示' : '隐藏'
+            })
+            updateStrength()
+        });
+    </script>
+</body>
+</html>
