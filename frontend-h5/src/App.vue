@@ -7,6 +7,8 @@ const route = useRoute()
 const appStore = useAppStore()
 
 const showTabBar = computed(() => !route.meta.hideTabBar)
+const showNavBar = computed(() => !route.meta.hideTabBar && route.path !== '/login')
+const pageTitle = computed(() => (route.meta.title as string) || 'Self-Agent')
 
 onMounted(() => {
   appStore.initDarkMode()
@@ -15,6 +17,16 @@ onMounted(() => {
 
 <template>
   <div class="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-pink-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+    <!-- 顶部导航栏 -->
+    <van-nav-bar
+      v-if="showNavBar"
+      :title="pageTitle"
+      fixed
+      placeholder
+      safe-area-inset-top
+      class="app-navbar"
+    />
+
     <router-view />
 
     <!-- 底部导航栏 -->
@@ -30,5 +42,14 @@ onMounted(() => {
 <style scoped>
 :deep(.van-tabbar) {
   --van-tabbar-item-active-color: #6366f1;
+}
+:deep(.app-navbar) {
+  --van-nav-bar-background: rgba(255, 255, 255, 0.9);
+  --van-nav-bar-title-text-color: #1f2937;
+  backdrop-filter: blur(12px);
+}
+.dark :deep(.app-navbar) {
+  --van-nav-bar-background: rgba(30, 41, 59, 0.9);
+  --van-nav-bar-title-text-color: #f3f4f6;
 }
 </style>

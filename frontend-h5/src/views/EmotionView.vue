@@ -104,8 +104,7 @@ const getEmotionBadgeColor = (emotion: string) => {
 </script>
 
 <template>
-  <div class="min-h-screen pb-16 px-4 pt-4">
-    <h1 class="text-xl font-bold text-gray-900 dark:text-white mb-4">情绪仪表盘</h1>
+  <div class="h-[calc(100vh-96px)] overflow-y-auto px-4 py-4">
 
     <!-- 当前情绪卡片 -->
     <div class="glass rounded-2xl p-4 shadow-lg mb-4">

@@ -361,7 +361,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex flex-col h-screen pb-14">
+  <div class="flex flex-col h-[calc(100vh-96px)]">
     <!-- 摄像头悬浮窗 -->
     <div
       v-if="isCameraOpen"
@@ -393,33 +393,6 @@ onUnmounted(() => {
         <div class="text-gray-400 text-[10px]">
           <div>视频: {{ currentEmotion.videoEmotion || '-' }}</div>
           <div>音频: {{ currentEmotion.audioEmotion || '-' }}</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 顶部栏 -->
-    <div class="glass border-b border-gray-200/50 px-4 py-3 safe-area-top">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-full gradient-bg flex items-center justify-center shadow">
-            <van-icon name="service-o" color="white" size="20" />
-          </div>
-          <div>
-            <h1 class="text-base font-semibold text-gray-900 dark:text-white">Self-Agent</h1>
-            <p class="text-xs text-gray-500">在线 · 随时为您提供支持</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-2">
-          <van-button
-            size="small"
-            type="danger"
-            round
-            class="crisis-pulse"
-            @click="router.push('/crisis')"
-          >
-            <van-icon name="warning-o" />
-            紧急
-          </van-button>
         </div>
       </div>
     </div>
@@ -489,7 +462,7 @@ onUnmounted(() => {
     </div>
 
     <!-- 输入区域 -->
-    <div class="glass border-t border-gray-200/50 px-4 py-3">
+    <div class="glass border-t border-gray-200/50 px-3 py-2">
       <!-- 录音状态覆盖层 -->
       <div
         v-if="isRecording"
@@ -504,7 +477,7 @@ onUnmounted(() => {
       </div>
 
       <!-- 情绪快捷标签 -->
-      <div class="flex gap-2 mb-3 overflow-x-auto pb-1">
+      <div class="flex gap-2 mb-2 overflow-x-auto pb-1">
         <button
           v-for="tag in emotionTags"
           :key="tag.value"

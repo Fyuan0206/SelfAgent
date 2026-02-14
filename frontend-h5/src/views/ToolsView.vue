@@ -25,8 +25,7 @@ const navigateTo = (route: string) => {
 </script>
 
 <template>
-  <div class="min-h-screen pb-16 px-4 pt-4">
-    <h1 class="text-xl font-bold text-gray-900 dark:text-white mb-4">快速工具</h1>
+  <div class="h-[calc(100vh-96px)] overflow-y-auto px-4 py-4">
 
     <!-- 快速工具网格 -->
     <div class="grid grid-cols-2 gap-3 mb-6">
